@@ -1,0 +1,67 @@
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribution / packaging
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Virtual environments
+venv/
+env/
+ENV/
+.env
+.venv
+env.bak/
+venv.bak/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Streamlit
+.streamlit/
+
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+
+# Data files (but keep the exported dataset)
+*.csv
+!exported_dataset.csv
+
+# Logging and caching
+*.log
+.cache/
+.hypothesis/
+.pytest_cache/
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Other
+*.bak
+*.tmp
+*.swp
+.coverage
+htmlcov/ 
