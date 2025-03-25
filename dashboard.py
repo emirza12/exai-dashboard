@@ -131,6 +131,15 @@ def load_insurance_data():
         st.error("Error: 'synthetic_insurance_data.csv' file not found in the current directory.")
         return None
 
+def load_home_insurance_data():
+    """Load the home insurance dataset"""
+    try:
+        home_df = pd.read_csv('home_insurance.csv')
+        return home_df
+    except FileNotFoundError:
+        st.error("Error: 'home_insurance.csv' file not found in the current directory.")
+        return None
+
 def prepare_data(df):
     """Prepare and clean the data for analysis"""
     # Frequency mapping for calculations
@@ -622,7 +631,8 @@ def create_dashboard(df, insurance_df=None):
         if 'Estimated_LTV' in filtered_df.columns:
             st.markdown(f"""
             💡 **Subscription Model Insights for Insurance Products:**  
-            E-commerce data shows subscribers have a **{sub_impact:.1f}% higher** lifetime value than non-subscribers.
+            E-commerce data shows subscribers have a **{sub_impact:.1f}% higher** lifetime value 
+            than non-subscribers.
             
             **Insurance Application:** LifeSure can leverage subscription insights by:
             • Implementing loyalty programs that reward long-term customers
@@ -1603,6 +1613,260 @@ def create_dashboard(df, insurance_df=None):
     </div>
     """, unsafe_allow_html=True)
 
+# Move the create_home_insurance_section function out of create_dashboard
+# Add this function definition at the module level, after the prepare_data function
+
+def create_home_insurance_section(home_df):
+    """Create visualizations for home insurance data analysis"""
+    if home_df is not None:
+        # Initialize color palettes for this section
+        colors = get_color_palettes()
+        
+        st.markdown('<h2 class="section-title">Home Insurance Risk Analysis</h2>', unsafe_allow_html=True)
+        
+        st.markdown("""
+        The following insights are derived from residential property insurance data, providing 
+        valuable insights for sustainable building practices, risk assessment, and property-specific 
+        underwriting strategies.
+        """)
+        
+        # Clean and prepare the data
+        home_df['Claim_Binary'] = home_df['Claim'].map({'oui': 1, 'non': 0})
+        home_df['Building_Painted_Clean'] = home_df['Building_Painted'].map({'V': 'Yes', 'N': 'No'})
+        home_df['Building_Fenced_Clean'] = home_df['Building_Fenced'].map({'V': 'Yes', 'N': 'No'})
+        home_df['Garden_Clean'] = home_df['Garden'].map({'V': 'Yes', 'O': 'No'})
+        home_df['Settlement_Clean'] = home_df['Settlement'].map({'U': 'Urban', 'R': 'Rural'})
+        
+        # Convert NumberOfWindows to a category
+        home_df['Windows_Category'] = home_df['NumberOfWindows']
+        home_df.loc[home_df['Windows_Category'] == 'without', 'Windows_Category'] = '0'
+        home_df.loc[home_df['Windows_Category'] == '>=10', 'Windows_Category'] = '10+'
+        
+        # --- BUILDING TYPE ANALYSIS --- #
+        st.markdown('<h3 class="section-title">Building Type & Construction Impact</h3>', unsafe_allow_html=True)
+        
+        building_col1, building_col2 = st.columns(2)
+        
+        with building_col1:
+            # Claims by building type
+            st.markdown('<h3 class="chart-title">Claims Frequency by Building Type</h3>', unsafe_allow_html=True)
+            
+            # Calculate claim frequency by building type
+            building_claims = home_df.groupby('Building_Type')['Claim_Binary'].mean().reset_index()
+            building_claims.columns = ['Building Type', 'Claim Frequency']
+            building_claims['Claim Frequency'] = building_claims['Claim Frequency'] * 100
+            building_claims = building_claims.sort_values('Claim Frequency', ascending=False)
+            
+            fig = px.bar(
+                building_claims,
+                x='Building Type',
+                y='Claim Frequency',
+                color='Claim Frequency',
+                color_continuous_scale=colors['sequential'],
+                text_auto='.1f'
+            )
+            fig.update_traces(texttemplate='%{text}%', textposition='outside')
+            fig.update_layout(
+                height=350,
+                margin=dict(l=10, r=10, t=10, b=30),
+                xaxis_title="Building Type",
+                yaxis_title="Claim Frequency (%)"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with building_col2:
+            # Building features impact on claims
+            st.markdown('<h3 class="chart-title">Building Features Impact</h3>', unsafe_allow_html=True)
+            
+            # Create a dataframe for building features
+            features = []
+            
+            # Calculate claim frequency for painted buildings
+            painted_freq = home_df.groupby('Building_Painted_Clean')['Claim_Binary'].mean()
+            features.append(('Painted', painted_freq['Yes'] * 100, painted_freq['No'] * 100))
+            
+            # Calculate claim frequency for fenced buildings
+            fenced_freq = home_df.groupby('Building_Fenced_Clean')['Claim_Binary'].mean()
+            features.append(('Fenced', fenced_freq['Yes'] * 100, fenced_freq['No'] * 100))
+            
+            # Calculate claim frequency by garden presence
+            garden_freq = home_df.groupby('Garden_Clean')['Claim_Binary'].mean()
+            features.append(('Garden', garden_freq['Yes'] * 100, garden_freq['No'] * 100))
+            
+            # Create dataframe for visualization
+            feature_df = pd.DataFrame(features, columns=['Feature', 'With Feature', 'Without Feature'])
+            feature_df_melt = feature_df.melt(id_vars='Feature', var_name='Status', value_name='Claim Frequency')
+            
+            fig = px.bar(
+                feature_df_melt, 
+                x='Feature',
+                y='Claim Frequency',
+                color='Status',
+                barmode='group',
+                color_discrete_sequence=[colors['sequential'][2], colors['sequential'][5]],
+                text_auto='.1f'
+            )
+            fig.update_traces(texttemplate='%{text}%', textposition='outside')
+            fig.update_layout(
+                height=350,
+                margin=dict(l=10, r=10, t=10, b=30),
+                xaxis_title="Building Feature",
+                yaxis_title="Claim Frequency (%)"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # --- LOCATION & EXPOSURE ANALYSIS --- #
+        st.markdown('<h3 class="section-title">Location & Exposure Analysis</h3>', unsafe_allow_html=True)
+        
+        location_col1, location_col2 = st.columns(2)
+        
+        with location_col1:
+            # Urban vs Rural claims
+            st.markdown('<h3 class="chart-title">Urban vs Rural Claim Rates</h3>', unsafe_allow_html=True)
+            
+            # Calculate claim frequency by settlement type
+            settlement_claims = home_df.groupby('Settlement_Clean')['Claim_Binary'].agg(['mean', 'count']).reset_index()
+            settlement_claims.columns = ['Settlement Type', 'Claim Frequency', 'Count']
+            settlement_claims['Claim Frequency'] = settlement_claims['Claim Frequency'] * 100
+            
+            fig = px.pie(
+                settlement_claims,
+                values='Count',
+                names='Settlement Type',
+                color='Settlement Type',
+                color_discrete_sequence=[colors['sequential'][3], colors['sequential'][6]],
+                hole=0.4
+            )
+            fig.update_traces(
+                textinfo='percent+label',
+                hovertemplate='%{label}<br>Count: %{value}<br>Claim Rate: %{customdata[0]:.1f}%',
+                customdata=settlement_claims[['Claim Frequency']]
+            )
+            fig.update_layout(
+                height=350,
+                margin=dict(l=10, r=10, t=10, b=10),
+                annotations=[dict(text='Settlement<br>Distribution', x=0.5, y=0.5, font_size=14, showarrow=False)]
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with location_col2:
+            # Building size impact on claims
+            st.markdown('<h3 class="chart-title">Building Size Impact on Claims</h3>', unsafe_allow_html=True)
+            
+            # Create building dimension bins
+            home_df['Building_Size_Category'] = pd.cut(
+                home_df['Building Dimension'].astype(float).fillna(0),
+                bins=[0, 500, 1000, 2000, 5000, float('inf')],
+                labels=['<500', '500-1000', '1000-2000', '2000-5000', '5000+']
+            )
+            
+            # Calculate claim frequency by building size
+            size_claims = home_df.groupby('Building_Size_Category')['Claim_Binary'].mean().reset_index()
+            size_claims.columns = ['Building Size (sq ft)', 'Claim Frequency']
+            size_claims['Claim Frequency'] = size_claims['Claim Frequency'] * 100
+            
+            fig = px.line(
+                size_claims,
+                x='Building Size (sq ft)',
+                y='Claim Frequency',
+                markers=True,
+                color_discrete_sequence=[colors['sequential'][7]],
+                text='Claim Frequency'
+            )
+            fig.update_traces(
+                texttemplate='%{text:.1f}%', 
+                textposition='top center',
+                marker=dict(size=10),
+                line=dict(width=3)
+            )
+            fig.update_layout(
+                height=350,
+                margin=dict(l=10, r=10, t=10, b=30),
+                xaxis_title="Building Size (sq ft)",
+                yaxis_title="Claim Frequency (%)"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # --- WINDOWS & VENTILATION IMPACT --- #
+        st.markdown('<h3 class="section-title">Windows & Ventilation Impact</h3>', unsafe_allow_html=True)
+        
+        window_col1, window_col2 = st.columns([3, 2])
+        
+        with window_col1:
+            # Number of windows impact on claims
+            st.markdown('<h3 class="chart-title">Window Count Impact on Claims</h3>', unsafe_allow_html=True)
+            
+            # Calculate claim frequency by number of windows
+            windows_claims = home_df.groupby('Windows_Category')['Claim_Binary'].mean().reset_index()
+            windows_claims.columns = ['Number of Windows', 'Claim Frequency']
+            windows_claims['Claim Frequency'] = windows_claims['Claim Frequency'] * 100
+            
+            # Exclude empty or invalid categories
+            windows_claims = windows_claims[windows_claims['Number of Windows'].notnull()]
+            
+            # Ensure proper ordering
+            windows_order = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10+']
+            windows_claims['Number of Windows'] = pd.Categorical(
+                windows_claims['Number of Windows'], 
+                categories=windows_order,
+                ordered=True
+            )
+            windows_claims = windows_claims.sort_values('Number of Windows')
+            
+            fig = px.bar(
+                windows_claims,
+                x='Number of Windows',
+                y='Claim Frequency',
+                color='Claim Frequency',
+                color_continuous_scale=colors['sequential'],
+                text_auto='.1f'
+            )
+            fig.update_traces(texttemplate='%{text}%', textposition='outside')
+            fig.update_layout(
+                height=350,
+                margin=dict(l=10, r=10, t=10, b=30),
+                xaxis_title="Number of Windows",
+                yaxis_title="Claim Frequency (%)"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        with window_col2:
+            # Insight box for ventilation
+            st.markdown('<div class="insight-box">', unsafe_allow_html=True)
+            st.markdown("""
+            💡 **Natural Ventilation Impact**
+            
+            Properties with 6-8 windows show significantly lower claim rates than those with no windows, 
+            suggesting proper ventilation may reduce moisture-related damage, improving building health 
+            and sustainability.
+            
+            **Sustainable Application:** Encourage property retrofits with optimal window placement for 
+            cross-ventilation, potentially offering premium discounts for sustainable ventilation improvements.
+            """)
+            st.markdown('</div>', unsafe_allow_html=True)
+        
+        # --- SUSTAINABLE BUILDING OPPORTUNITIES --- #
+        st.markdown('<div class="policy-box">', unsafe_allow_html=True)
+        st.markdown("""
+        ### Sustainable Building & Insurance Opportunities
+        
+        **1. Resilient Construction Incentives**
+        - Offer premium discounts for fire-resistive building materials with lower claim rates
+        - Design retrofit programs focused on proper building painting and fencing
+        - Develop specialized products for different building sizes based on risk profiles
+        
+        **2. Natural Ventilation & Building Health**
+        - Create incentives for optimal window count and placement (6-8 windows shows best outcomes)
+        - Develop educational materials on sustainable ventilation practices
+        - Partner with contractors for sustainable retrofits that reduce claim likelihood
+        
+        **3. Location-Based Sustainability Programs**
+        - Address higher rural claim rates with specialized sustainability programs
+        - Create urban-specific incentives that acknowledge different risk patterns
+        - Develop property size-specific guidelines for sustainable construction and maintenance
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
+
 def main():
     # Load the e-commerce data
     df = load_data()
@@ -1610,12 +1874,18 @@ def main():
     # Load the insurance data
     insurance_df = load_insurance_data()
     
+    # Load the home insurance data
+    home_df = load_home_insurance_data()
+    
     if df is not None:
         # Prepare the data
         clean_df = prepare_data(df)
         
         # Create the dashboard
         create_dashboard(clean_df, insurance_df)
+        
+        # Add the home insurance section
+        create_home_insurance_section(home_df)
 
 if __name__ == '__main__':
     main()
