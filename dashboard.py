@@ -245,7 +245,7 @@ def create_dashboard(df, insurance_df):
 
     with nav_col1:
         st.markdown('<div style="text-align: center; padding: 10px; background-color: #E8F5E9; border-radius: 5px;">', unsafe_allow_html=True)
-        st.markdown('#### 📊 Customer & Digital')
+        st.markdown('#### 📊 E-Commerce')
         st.markdown('Customer demographics, digital interactions, and policy preferences')
         st.markdown('</div>', unsafe_allow_html=True)
 
