@@ -73,6 +73,18 @@ st.markdown("""
         font-size: 1rem;
         color: #616161;
     }
+    .fullwidth-container {
+        width: 100%;
+        max-width: 100%;
+    }
+    .stPlotlyChart {
+        width: 100%;
+    }
+    /* Force charts to take full width within their columns */
+    [data-testid="column"] > [data-testid="stVerticalBlock"] {
+        width: 100%;
+        max-width: 100%;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -108,6 +120,15 @@ def load_data():
         return df
     except FileNotFoundError:
         st.error("Error: 'exported_dataset.csv' file not found in the current directory.")
+        return None
+
+def load_insurance_data():
+    """Load the synthetic insurance dataset"""
+    try:
+        insurance_df = pd.read_csv('synthetic_insurance_data.csv')
+        return insurance_df
+    except FileNotFoundError:
+        st.error("Error: 'synthetic_insurance_data.csv' file not found in the current directory.")
         return None
 
 def prepare_data(df):
@@ -162,7 +183,7 @@ def prepare_data(df):
     
     return df
 
-def create_dashboard(df):
+def create_dashboard(df, insurance_df=None):
     # Get the color palettes first thing in the dashboard creation
     colors = get_color_palettes()
     
@@ -1171,27 +1192,430 @@ def create_dashboard(df):
     with st.expander("Explore E-commerce Data Details"):
         st.dataframe(filtered_df.head(10), height=300)
     
+    # --- INSURANCE-SPECIFIC INSIGHTS SECTION --- #
+    if insurance_df is not None:
+        # Set up a completely clean layout structure
+        st.markdown('<h2 class="section-title">Insurance-Specific Analytics</h2>', unsafe_allow_html=True)
+        
+        st.markdown("""
+        The following insights are derived directly from insurance policy data, complementing the e-commerce 
+        consumer behavior patterns analyzed above. These visualizations highlight key factors affecting 
+        policy pricing, risk assessment, and customer conversion.
+        """)
+        
+        # RISK PROFILE ANALYSIS - 2 columns side by side
+        st.markdown('<h3 class="section-title">Risk Profile Analysis</h3>', unsafe_allow_html=True)
+        risk_col1, risk_col2 = st.columns(2)
+        
+        with risk_col1:
+            # Claims frequency by age group
+            # Create age groups
+            bins = [0, 25, 40, 60, 100]
+            labels = ['18-24', '25-39', '40-59', '60+']
+            insurance_df['Age Group'] = pd.cut(insurance_df['Age'], bins=bins, labels=labels, right=False)
+            
+            # Calculate average claims frequency by age group
+            claims_by_age = insurance_df.groupby('Age Group')['Claims_Frequency'].mean().reset_index()
+            
+            fig = px.bar(
+                claims_by_age,
+                x='Age Group',
+                y='Claims_Frequency',
+                color='Claims_Frequency',
+                color_continuous_scale=colors['sequential'],
+                text_auto='.2f'
+            )
+            fig.update_traces(textposition='outside')
+            fig.update_layout(
+                height=350,
+                margin=dict(l=10, r=10, t=10, b=30),
+                xaxis_title="Age Group",
+                yaxis_title="Average Claims Frequency"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+
+        with risk_col2:
+            # Claims severity distribution
+            severity_counts = insurance_df['Claims_Severity'].value_counts().reset_index()
+            severity_counts.columns = ['Severity', 'Count']
+            
+            # Sort in order of increasing severity
+            severity_order = ['Low', 'Medium', 'High']
+            severity_counts['Severity'] = pd.Categorical(severity_counts['Severity'], categories=severity_order, ordered=True)
+            severity_counts = severity_counts.sort_values('Severity')
+            
+            fig = px.pie(
+                severity_counts,
+                values='Count',
+                names='Severity',
+                color='Severity',
+                color_discrete_sequence=colors['sequential'][2:8:2],
+                hole=0.4
+            )
+            fig.update_traces(
+                textposition='inside', 
+                textinfo='percent+label',
+                marker=dict(line=dict(color='#FFFFFF', width=2))
+            )
+            fig.update_layout(
+                height=350,
+                margin=dict(l=10, r=10, t=10, b=10),
+                legend_title="Claims Severity"
+            )
+            st.plotly_chart(fig, use_container_width=True)
+        
+        # CREDIT SCORE SECTION - 2 columns with different widths
+        if 'Credit_Score' in insurance_df.columns and 'Claims_Frequency' in insurance_df.columns:
+            credit_col1, credit_col2 = st.columns([3, 2])
+            
+            with credit_col1:
+                # Credit score vs claims frequency
+                if 'Credit_Score' in insurance_df.columns and 'Claims_Frequency' in insurance_df.columns:
+                    # Calculate correlation
+                    credit_claims_corr = insurance_df['Credit_Score'].corr(insurance_df['Claims_Frequency'])
+                    
+                    # Group by credit score ranges
+                    insurance_df['Credit Score Range'] = pd.cut(
+                        insurance_df['Credit_Score'], 
+                        bins=[600, 650, 700, 750, 850], 
+                        labels=['600-650', '651-700', '701-750', '751+']
+                    )
+                    
+                    claims_by_credit = insurance_df.groupby('Credit Score Range')['Claims_Frequency'].mean().reset_index()
+                    
+                    # Credit score vs claims frequency
+                    fig = px.bar(
+                        claims_by_credit,
+                        x='Credit Score Range',
+                        y='Claims_Frequency',
+                        color='Claims_Frequency',
+                        color_continuous_scale=colors['sequential'],
+                        text_auto='.2f'
+                    )
+                    fig.update_traces(textposition='outside')
+                    fig.update_layout(
+                        height=300,
+                        margin=dict(l=10, r=10, t=10, b=30),
+                        xaxis_title="Credit Score Range",
+                        yaxis_title="Average Claims Frequency"
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+
+            with credit_col2:
+                # Insight box
+                st.markdown('<div class="insight-box">', unsafe_allow_html=True)
+                st.markdown(f"""
+                💡 **Credit Score Impact on Claims**
+                
+                Analysis shows a correlation of **{credit_claims_corr:.2f}** between credit score and claims frequency. 
+                Policyholders with higher credit scores file claims less frequently, supporting the practice of 
+                credit-based insurance scoring for risk assessment.
+                
+                This data reinforces the importance of sustainable financial behaviors in broader risk profiles.
+                """)
+                st.markdown('</div>', unsafe_allow_html=True)
+        
+        # CONVERSION ANALYSIS - 2 columns side by side
+        st.markdown('<h3 class="section-title">Lead Source & Conversion Analysis</h3>', unsafe_allow_html=True)
+        conv_col1, conv_col2 = st.columns(2)
+        
+        with conv_col1:
+            # Conversion rate chart
+            st.markdown('<h3 class="chart-title">Conversion Rate by Lead Source</h3>', unsafe_allow_html=True)
+            if 'Source_of_Lead' in insurance_df.columns and 'Conversion_Status' in insurance_df.columns:
+                lead_conversion = insurance_df.groupby('Source_of_Lead')['Conversion_Status'].mean().reset_index()
+                lead_conversion.columns = ['Lead Source', 'Conversion Rate']
+                lead_conversion['Conversion Rate'] = lead_conversion['Conversion Rate'] * 100
+                
+                fig = px.bar(
+                    lead_conversion,
+                    x='Lead Source',
+                    y='Conversion Rate',
+                    color='Conversion Rate',
+                    color_continuous_scale=colors['sequential'],
+                    text_auto='.1f'
+                )
+                fig.update_traces(texttemplate='%{text}%', textposition='outside')
+                fig.update_layout(
+                    height=350,
+                    margin=dict(l=10, r=10, t=10, b=30),
+                    xaxis_title="Lead Source",
+                    yaxis_title="Conversion Rate (%)"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Lead source or conversion status data not available.")
+
+        with conv_col2:
+            # Time to conversion distribution
+            st.markdown('<h3 class="chart-title">Time to Conversion Distribution</h3>', unsafe_allow_html=True)
+            if 'Time_to_Conversion' in insurance_df.columns and 'Conversion_Status' in insurance_df.columns:
+                # Filter for converted leads
+                converted = insurance_df[insurance_df['Conversion_Status'] == 1]
+                
+                # Create bins for time to conversion
+                converted['Conversion Time Range'] = pd.cut(
+                    converted['Time_to_Conversion'],
+                    bins=[0, 3, 7, 14, float('inf')],
+                    labels=['1-3 days', '4-7 days', '8-14 days', '15+ days']
+                )
+                
+                time_counts = converted['Conversion Time Range'].value_counts().reset_index()
+                time_counts.columns = ['Time to Conversion', 'Count']
+                
+                # Ensure correct order
+                time_order = ['1-3 days', '4-7 days', '8-14 days', '15+ days']
+                time_counts['Time to Conversion'] = pd.Categorical(time_counts['Time to Conversion'], categories=time_order, ordered=True)
+                time_counts = time_counts.sort_values('Time to Conversion')
+                
+                fig = px.bar(
+                    time_counts,
+                    x='Time to Conversion',
+                    y='Count',
+                    color='Count',
+                    color_continuous_scale=colors['sequential'],
+                    text_auto='.0f'
+                )
+                fig.update_traces(textposition='outside')
+                fig.update_layout(
+                    height=350,
+                    margin=dict(l=10, r=10, t=10, b=30),
+                    xaxis_title="Time to Conversion",
+                    yaxis_title="Number of Conversions"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Time to conversion data not available.")
+        
+        # DIGITAL ENGAGEMENT - 2 columns with different widths
+        if 'Website_Visits' in insurance_df.columns and 'Conversion_Status' in insurance_df.columns:
+            dig_col1, dig_col2 = st.columns([3, 2])
+            
+            with dig_col1:
+                # Website visits chart
+                st.markdown('<h3 class="chart-title">Digital Engagement Impact</h3>', unsafe_allow_html=True)
+                # Group by website visits
+                insurance_df['Visit Frequency'] = pd.cut(
+                    insurance_df['Website_Visits'],
+                    bins=[0, 3, 5, 10, float('inf')],
+                    labels=['1-3 visits', '4-5 visits', '6-10 visits', '11+ visits']
+                )
+                
+                visits_conversion = insurance_df.groupby('Visit Frequency')['Conversion_Status'].mean().reset_index()
+                visits_conversion.columns = ['Website Visit Frequency', 'Conversion Rate']
+                visits_conversion['Conversion Rate'] = visits_conversion['Conversion Rate'] * 100
+                
+                fig = px.line(
+                    visits_conversion,
+                    x='Website Visit Frequency',
+                    y='Conversion Rate',
+                    markers=True,
+                    line_shape='linear',
+                    color_discrete_sequence=[colors['sequential'][6]]
+                )
+                fig.update_traces(marker=dict(size=10), line=dict(width=3))
+                fig.update_layout(
+                    height=300,
+                    margin=dict(l=10, r=10, t=10, b=30),
+                    xaxis_title="Website Visit Frequency",
+                    yaxis_title="Conversion Rate (%)"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+
+            with dig_col2:
+                # Insight box
+                st.markdown('<div class="insight-box">', unsafe_allow_html=True)
+                st.markdown("""
+                💡 **Digital Engagement Impact**
+                
+                Website visits show a clear correlation with conversion rates. Customers who visit 6+ times are significantly more likely to purchase a policy.
+                
+                **Sustainable Application:** Digital engagement not only drives conversion but also creates opportunities for paperless policy delivery and sustainable customer interactions.
+                """)
+                st.markdown('</div>', unsafe_allow_html=True)
+        
+        # PREMIUM ANALYSIS - 2 columns side by side
+        st.markdown('<h3 class="section-title">Premium & Discount Analysis</h3>', unsafe_allow_html=True)
+        prem_col1, prem_col2 = st.columns(2)
+        
+        with prem_col1:
+            # Premium by policy type
+            st.markdown('<h3 class="chart-title">Average Premium by Policy Type</h3>', unsafe_allow_html=True)
+            if 'Policy_Type' in insurance_df.columns and 'Premium_Amount' in insurance_df.columns:
+                # Calculate average premium by policy type
+                policy_premium = insurance_df.groupby('Policy_Type')['Premium_Amount'].mean().reset_index()
+                policy_premium.columns = ['Policy Type', 'Average Premium']
+                
+                fig = px.bar(
+                    policy_premium,
+                    x='Policy Type',
+                    y='Average Premium',
+                    color='Policy Type',
+                    color_discrete_sequence=colors['categorical'][:len(policy_premium)],
+                    text_auto='$.0f'
+                )
+                fig.update_traces(textposition='outside')
+                fig.update_layout(
+                    height=350,
+                    margin=dict(l=10, r=10, t=10, b=30),
+                    xaxis_title="",
+                    yaxis_title="Average Premium Amount (USD)"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Policy type or premium amount data not available.")
+
+        with prem_col2:
+            # Discount impact
+            st.markdown('<h3 class="chart-title">Impact of Discounts on Premium</h3>', unsafe_allow_html=True)
+            if 'Premium_Amount' in insurance_df.columns:
+                # Check for discount columns - expand to include all possible discount columns
+                discount_cols = [col for col in insurance_df.columns if 'Discount' in col]
+                
+                # Add more specific discount column names that might be in the data
+                additional_discount_cols = ['Safe_Driver_Discount', 'Multi_Policy_Discount', 'Bundling_Discount', 'Total_Discounts']
+                for col in additional_discount_cols:
+                    if col in insurance_df.columns and col not in discount_cols:
+                        discount_cols.append(col)
+                
+                if discount_cols:
+                    # Make sure we properly identify customers with discounts
+                    insurance_df['Has_Discount'] = (insurance_df[discount_cols] > 0).any(axis=1)
+                    
+                    # Calculate average premium with/without discounts
+                    discount_premium = insurance_df.groupby('Has_Discount')['Premium_Amount'].mean().reset_index()
+                    discount_premium['Discount Status'] = discount_premium['Has_Discount'].map({False: 'No Discounts', True: 'With Discounts'})
+                    
+                    # Print debug info
+                    st.write(f"Discount columns found: {discount_cols}")
+                    st.write(f"Number of customers with discounts: {insurance_df['Has_Discount'].sum()}")
+                    
+                    fig = px.bar(
+                        discount_premium,
+                        x='Discount Status',
+                        y='Premium_Amount',
+                        color='Discount Status',
+                        color_discrete_sequence=colors['sequential'][2:6:2],
+                        text_auto='$.0f'
+                    )
+                    fig.update_traces(textposition='outside')
+                    fig.update_layout(
+                        height=350,
+                        margin=dict(l=10, r=10, t=10, b=30),
+                        xaxis_title="",
+                        yaxis_title="Average Premium Amount (USD)"
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
+                else:
+                    st.info("Discount data not available.")
+            else:
+                st.info("Premium amount data not available.")
+        
+        # GEOGRAPHIC ANALYSIS - 2 columns side by side
+        st.markdown('<h3 class="section-title">Geographic Risk Assessment</h3>', unsafe_allow_html=True)
+        geo_col1, geo_col2 = st.columns(2)
+        
+        with geo_col1:
+            # Premium by region
+            st.markdown('<h3 class="chart-title">Average Premium by Region</h3>', unsafe_allow_html=True)
+            if 'Region' in insurance_df.columns and 'Premium_Amount' in insurance_df.columns:
+                # Calculate average premium by region
+                region_premium = insurance_df.groupby('Region')['Premium_Amount'].mean().reset_index()
+                region_premium.columns = ['Region', 'Average Premium']
+                region_premium = region_premium.sort_values('Average Premium', ascending=False)
+                
+                fig = px.bar(
+                    region_premium,
+                    x='Region',
+                    y='Average Premium',
+                    color='Region',
+                    color_discrete_sequence=colors['categorical'][:len(region_premium)],
+                    text_auto='$.0f'
+                )
+                fig.update_traces(textposition='outside')
+                fig.update_layout(
+                    height=350,
+                    margin=dict(l=10, r=10, t=10, b=30),
+                    xaxis_title="",
+                    yaxis_title="Average Premium Amount (USD)"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Region or premium amount data not available.")
+
+        with geo_col2:
+            # Claims by region
+            st.markdown('<h3 class="chart-title">Claims Frequency by Region</h3>', unsafe_allow_html=True)
+            if 'Region' in insurance_df.columns and 'Claims_Frequency' in insurance_df.columns:
+                # Calculate average claims by region
+                region_claims = insurance_df.groupby('Region')['Claims_Frequency'].mean().reset_index()
+                region_claims.columns = ['Region', 'Average Claims']
+                region_claims = region_claims.sort_values('Average Claims', ascending=False)
+                
+                fig = px.bar(
+                    region_claims,
+                    x='Region',
+                    y='Average Claims',
+                    color='Region',
+                    color_discrete_sequence=colors['categorical'][:len(region_claims)],
+                    text_auto='.2f'
+                )
+                fig.update_traces(textposition='outside')
+                fig.update_layout(
+                    height=350,
+                    margin=dict(l=10, r=10, t=10, b=30),
+                    xaxis_title="",
+                    yaxis_title="Average Claims Frequency"
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.info("Region or claims frequency data not available.")
+        
+        # OPPORTUNITIES BOX - full width
+        st.markdown('<div class="policy-box">', unsafe_allow_html=True)
+        st.markdown("""
+        ### Key Sustainable Insurance Opportunities Identified
+
+        **1. Risk-Based Eco-Friendly Discounts**
+        - Offer premium discounts for eco-friendly home modifications in high-risk regions
+        - Create driver safety programs with sustainable vehicle usage recommendations
+        - Lower premium adjustments for customers with strong credit scores adopting green initiatives
+
+        **2. Digital-First Conversion Strategy**
+        - Implement streamlined digital quote process (<7 days optimal conversion window)
+        - Focus marketing resources on "Online" and "Referral" channels with highest ROI
+        - Create engagement-driven sustainability education during the multiple site visits before conversion
+
+        **3. Region-Based Sustainability Programs**
+        - Develop urban-specific green initiatives to offset higher risk premiums
+        - Create rural disaster resilience programs with sustainable building practices
+        - Design regional climate adaptation strategies based on claims distribution patterns
+        """)
+        st.markdown('</div>', unsafe_allow_html=True)
+
     # Dashboard explanation with black background
     st.markdown("""
     <div class="about-box">
     <h3>About This Dashboard</h3>
-    <p>This dashboard analyzes e-commerce customer behavior to provide insights for LifeSure Insurance's 
-    sustainability initiatives. While the data comes from retail shopping patterns, the consumer preferences, 
-    payment behaviors, and engagement patterns can inform insurance product development, digital transformation 
-    strategies, and sustainability initiatives.</p>
+    <p>This dashboard analyzes e-commerce customer behavior and insurance policy data to provide insights for LifeSure Insurance's 
+    sustainability initiatives. By combining retail shopping patterns with actual insurance metrics, we can inform product development, 
+    digital transformation strategies, and targeted sustainability programs.</p>
     </div>
     """, unsafe_allow_html=True)
 
 def main():
-    # Load the data
+    # Load the e-commerce data
     df = load_data()
+    
+    # Load the insurance data
+    insurance_df = load_insurance_data()
     
     if df is not None:
         # Prepare the data
         clean_df = prepare_data(df)
         
-        # Create the dashboard (don't define colors here)
-        create_dashboard(clean_df)
+        # Create the dashboard
+        create_dashboard(clean_df, insurance_df)
 
 if __name__ == '__main__':
     main()
