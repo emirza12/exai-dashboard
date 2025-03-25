@@ -1,0 +1,128 @@
+Data Cleaning Report - 2025-03-25 21:12:40.985465
+
+==================================================
+Processing: sample_data/home_insurance.csv
+
+Initial Shape: (5012, 13)
+Missing Values:
+|                    |   0 |
+|:-------------------|----:|
+| Customer Id        |   0 |
+| YearOfObservation  |   0 |
+| Insured_Period     |   0 |
+| Residential        |   0 |
+| Building_Painted   |   0 |
+| Building_Fenced    |   0 |
+| Garden             |   4 |
+| Settlement         |   0 |
+| Building Dimension |  77 |
+| Building_Type      |   0 |
+| NumberOfWindows    |   0 |
+| Geo_Code           |  73 |
+| Claim              |   0 |
+Duplicates: 0
+
+Cleaning Results:
+- Removed duplicates: 0
+- Final shape: (5012, 13)
+- Output file: cleaned_data/cleaned_home_insurance.csv
+Status: SUCCESS
+==================================================
+Processing: sample_data/car_co2.csv
+
+Initial Shape: (7385, 12)
+Missing Values:
+|                                  |   0 |
+|:---------------------------------|----:|
+| Make                             |   0 |
+| Model                            |   0 |
+| Vehicle Class                    |   0 |
+| Engine Size(L)                   |   0 |
+| Cylinders                        |   0 |
+| Transmission                     |   0 |
+| Fuel Type                        |   0 |
+| Fuel Consumption City (L/100 km) |   0 |
+| Fuel Consumption Hwy (L/100 km)  |   0 |
+| Fuel Consumption Comb (L/100 km) |   0 |
+| Fuel Consumption Comb (mpg)      |   0 |
+| CO2 Emissions(g/km)              |   0 |
+Duplicates: 1103
+
+Cleaning Results:
+- Removed duplicates: 1103
+- Final shape: (6282, 12)
+- Output file: cleaned_data/cleaned_car_co2.csv
+Status: SUCCESS
+==================================================
+Processing: sample_data/car_insurance.csv
+
+Initial Shape: (508499, 16)
+Missing Values:
+|                   |      0 |
+|:------------------|-------:|
+| SEX               |      0 |
+| INSR_BEGIN        |      0 |
+| INSR_END          |      0 |
+| EFFECTIVE_YR      |      3 |
+| INSR_TYPE         |      0 |
+| INSURED_VALUE     |      0 |
+| PREMIUM           |     13 |
+| OBJECT_ID         |      0 |
+| PROD_YEAR         |     63 |
+| SEATS_NUM         |     95 |
+| CARRYING_CAPACITY | 116834 |
+| TYPE_VEHICLE      |      0 |
+| CCM_TON           |      6 |
+| MAKE              |      5 |
+| USAGE             |      0 |
+| CLAIM_PAID        | 470727 |
+Duplicates: 78
+
+Cleaning Results:
+- Removed duplicates: 78
+- Final shape: (508421, 16)
+- Output file: cleaned_data/cleaned_car_insurance.csv
+Status: SUCCESS
+==================================================
+Processing: sample_data/synthetic_insurance_data.csv
+
+Initial Shape: (10000, 27)
+Missing Values:
+|                                    |   0 |
+|:-----------------------------------|----:|
+| Age                                |   0 |
+| Is_Senior                          |   0 |
+| Marital_Status                     |   0 |
+| Married_Premium_Discount           |   0 |
+| Prior_Insurance                    |   0 |
+| Prior_Insurance_Premium_Adjustment |   0 |
+| Claims_Frequency                   |   0 |
+| Claims_Severity                    |   0 |
+| Claims_Adjustment                  |   0 |
+| Policy_Type                        |   0 |
+| Policy_Adjustment                  |   0 |
+| Premium_Amount                     |   0 |
+| Safe_Driver_Discount               |   0 |
+| Multi_Policy_Discount              |   0 |
+| Bundling_Discount                  |   0 |
+| Total_Discounts                    |   0 |
+| Source_of_Lead                     |   0 |
+| Time_Since_First_Contact           |   0 |
+| Conversion_Status                  |   0 |
+| Website_Visits                     |   0 |
+| Inquiries                          |   0 |
+| Quotes_Requested                   |   0 |
+| Time_to_Conversion                 |   0 |
+| Credit_Score                       |   0 |
+| Premium_Adjustment_Credit          |   0 |
+| Region                             |   0 |
+| Premium_Adjustment_Region          |   0 |
+Duplicates: 0
+
+Cleaning Results:
+- Removed duplicates: 0
+- Final shape: (10000, 27)
+- Output file: cleaned_data/cleaned_synthetic_insurance_data.csv
+Status: SUCCESS
+
+Batch processing complete

@@ -4,6 +4,7 @@ pandas==2.1.4
 numpy==1.26.3
 plotly==5.18.0
 matplotlib==3.8.2
+statsmodels==0.14.1
 
 # Optional but recommended
 seaborn==0.13.1
