@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 # Set page configuration
 st.set_page_config(
-    page_title="LifeSure E-commerce Insights",
+    page_title="LifeSure Insurance Dashboard",
     page_icon="🌿",
     layout="wide",
     initial_sidebar_state="expanded"
@@ -210,19 +210,58 @@ def prepare_data(df):
     
     return df
 
-def create_dashboard(df, insurance_df=None):
-    # Get the color palettes first thing in the dashboard creation
+def create_dashboard(df, insurance_df):
+    # Initialize color palettes
     colors = get_color_palettes()
     
-    # Main title
-    st.markdown('<h1 class="main-title">🌿 E-commerce Insights for LifeSure Insurance</h1>', unsafe_allow_html=True)
+    # Display header with logo and title
+    col1, col2, col3 = st.columns([1, 3, 1])
+    with col2:
+        st.markdown('<h1 class="main-title">LifeSure Insurance Dashboard</h1>', unsafe_allow_html=True)
     
+    # About section
+    st.markdown('<div class="about-box">', unsafe_allow_html=True)
     st.markdown("""
-    This dashboard analyzes consumer behavior from e-commerce data to help LifeSure Insurance 
-    identify patterns relevant to designing modern, sustainable insurance policies. While 
-    the data comes from retail shopping, many consumer preferences and trends provide valuable 
-    insights for insurance product development.
+    ### About LifeSure Insurance
+    
+    LifeSure is a forward-thinking insurance provider committed to sustainability and data-driven decision making. 
+    This dashboard provides comprehensive insights across our three key insurance domains:
+    
+    - **Customer Behavior & E-commerce**: Understanding our digital customer base and their interactions
+    - **Home Insurance**: Analyzing property risks and sustainable building opportunities
+    - **Auto Insurance**: Evaluating vehicle emissions, driver profiles, and eco-friendly incentives
+    
+    Our mission is to design insurance products that protect our clients while promoting sustainability.
     """)
+    st.markdown('</div>', unsafe_allow_html=True)
+    
+    # After the initial about box, add a navigation section
+    st.markdown('<div style="text-align: center; padding: 10px 0 30px 0;">', unsafe_allow_html=True)
+    st.markdown("""
+    ### Dashboard Sections
+    """)
+
+    nav_col1, nav_col2, nav_col3 = st.columns(3)
+
+    with nav_col1:
+        st.markdown('<div style="text-align: center; padding: 10px; background-color: #E8F5E9; border-radius: 5px;">', unsafe_allow_html=True)
+        st.markdown('#### 📊 Customer & Digital')
+        st.markdown('Customer demographics, digital interactions, and policy preferences')
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with nav_col2:
+        st.markdown('<div style="text-align: center; padding: 10px; background-color: #E8F5E9; border-radius: 5px;">', unsafe_allow_html=True)
+        st.markdown('#### 🏠 Home Insurance')
+        st.markdown('Property risk analysis and sustainable building incentives')
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    with nav_col3:
+        st.markdown('<div style="text-align: center; padding: 10px; background-color: #E8F5E9; border-radius: 5px;">', unsafe_allow_html=True)
+        st.markdown('#### 🚗 Auto Insurance')
+        st.markdown('Vehicle emissions, driver risk, and eco-friendly policies')
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    st.markdown('</div>', unsafe_allow_html=True)
     
     # Sidebar filters with explanations
     st.sidebar.markdown('## 🔍 Explore Customer Segments')
@@ -287,20 +326,20 @@ def create_dashboard(df, insurance_df=None):
         st.markdown(f"**Currently viewing:** {' | '.join(active_filters)}")
     
     # --- SECTION 1: KEY BUSINESS METRICS --- #
-    st.markdown('<h2 class="section-title">Key Consumer Insights for Insurance Innovation</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-title">Customer Insights & Digital Interaction Analysis</h2>', unsafe_allow_html=True)
     
     # Key metrics with explanations
-    col1, col2, col3, col4 = st.columns(4)
+    metrics_col1, metrics_col2, metrics_col3, metrics_col4 = st.columns(4)
     
-    with col1:
+    with metrics_col1:
         if 'Age' in filtered_df.columns:
             avg_age = round(filtered_df['Age'].mean(), 1)
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
             st.markdown(f'<div class="metric-value">{avg_age}</div>', unsafe_allow_html=True)
-            st.markdown('<div class="metric-label">Average Age</div>', unsafe_allow_html=True)
+            st.markdown('<div class="metric-label">Average Customer Age</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
     
-    with col2:
+    with metrics_col2:
         if 'Estimated_Annual_Spend' in filtered_df.columns:
             avg_spend = round(filtered_df['Estimated_Annual_Spend'].mean(), 2)
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
@@ -308,7 +347,7 @@ def create_dashboard(df, insurance_df=None):
             st.markdown('<div class="metric-label">Avg. Annual Spend</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
     
-    with col3:
+    with metrics_col3:
         if 'Subscription Status' in filtered_df.columns:
             subscription_rate = round((filtered_df['Subscription Status'] == 'Yes').mean() * 100, 1)
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
@@ -316,7 +355,7 @@ def create_dashboard(df, insurance_df=None):
             st.markdown('<div class="metric-label">Subscription Rate</div>', unsafe_allow_html=True)
             st.markdown('</div>', unsafe_allow_html=True)
     
-    with col4:
+    with metrics_col4:
         if 'Review Rating' in filtered_df.columns:
             avg_rating = round(filtered_df['Review Rating'].mean(), 1)
             st.markdown('<div class="metric-card">', unsafe_allow_html=True)
@@ -337,7 +376,7 @@ def create_dashboard(df, insurance_df=None):
     st.markdown('</div>', unsafe_allow_html=True)
     
     # --- SECTION 2: CUSTOMER DEMOGRAPHICS --- #
-    st.markdown('<h2 class="section-title">Consumer Demographics Analysis</h2>', unsafe_allow_html=True)
+    st.markdown('<h2 class="section-title">Customer Demographics & Policy Selection</h2>', unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     
