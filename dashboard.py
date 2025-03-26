@@ -125,37 +125,37 @@ def load_data():
 def load_insurance_data():
     """Load the synthetic insurance dataset"""
     try:
-        insurance_df = pd.read_csv('synthetic_insurance_data.csv')
+        insurance_df = pd.read_csv('cleaned_data/cleaned_synthetic_insurance_data.csv')
         return insurance_df
     except FileNotFoundError:
-        st.error("Error: 'synthetic_insurance_data.csv' file not found in the current directory.")
+        st.error("Error: 'cleaned_data/cleaned_synthetic_insurance_data.csv' file not found in the current directory.")
         return None
 
 def load_home_insurance_data():
     """Load the home insurance dataset"""
     try:
-        home_df = pd.read_csv('home_insurance.csv')
+        home_df = pd.read_csv('cleaned_data/cleaned_home_insurance.csv')
         return home_df
     except FileNotFoundError:
-        st.error("Error: 'home_insurance.csv' file not found in the current directory.")
+        st.error("Error: 'cleaned_home_insurance.csv' file not found in the current directory.")
         return None
 
 def load_car_co2_data():
     """Load the car CO2 emissions dataset"""
     try:
-        car_df = pd.read_csv('car_co2.csv')
+        car_df = pd.read_csv('cleaned_data/cleaned_car_co2.csv')
         return car_df
     except FileNotFoundError:
-        st.error("Error: 'car_co2.csv' file not found in the current directory.")
+        st.error("Error: 'cleaned_car_co2.csv' file not found in the current directory.")
         return None
 
 def load_car_insurance_data():
     """Load the car insurance dataset"""
     try:
-        car_ins_df = pd.read_csv('car_insurance.csv')
+        car_ins_df = pd.read_csv('cleaned_data/cleaned_car_insurance.csv')
         return car_ins_df
     except FileNotFoundError:
-        st.error("Error: 'car_insurance.csv' file not found in the current directory.")
+        st.error("Error: 'cleaned_car_insurance.csv' file not found in the current directory.")
         return None
 
 def prepare_data(df):
@@ -2137,7 +2137,7 @@ def create_car_insurance_section(car_ins_df):
     """Create visualizations from car insurance data to complement CO2 analysis"""
     try:
         # Also load CO2 data to create combined insights
-        car_co2_df = pd.read_csv('car_co2.csv')
+        car_co2_df = pd.read_csv('cleaned_data/cleaned_car_co2.csv')
         
         # Initialize color palettes for this section
         colors = get_color_palettes()
